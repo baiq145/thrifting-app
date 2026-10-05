@@ -1,75 +1,130 @@
-import { Pressable, StyleSheet, Text, TextInput, View } from "react-native";
-
 import { Ionicons } from "@expo/vector-icons";
+import { router } from "expo-router";
+import { Pressable, Text, View } from "react-native";
 
-export default function Index() {
+import { clothingStyles as styles } from "@/constants/clothingStyles";
+
+// Tipe data produk
+interface Product {
+  id: number;
+  name: string;
+  category: string;
+  price: number;
+  icon: keyof typeof Ionicons.glyphMap;
+}
+
+// Array of Objects
+const products: Product[] = [
+  {
+    id: 1,
+    name: "Kaos Oversize",
+    category: "T-Shirt",
+    price: 75000,
+    icon: "shirt-outline",
+  },
+  {
+    id: 2,
+    name: "Hoodie Vintage",
+    category: "Hoodie",
+    price: 120000,
+    icon: "shirt-outline",
+  },
+  {
+    id: 3,
+    name: "Jeans Cargo",
+    category: "Celana",
+    price: 150000,
+    icon: "shirt-outline",
+  },
+];
+
+// Custom Function
+function formatPrice(price: number): string {
+  return "Rp " + price.toLocaleString("id-ID");
+}
+
+// Komponen kartu produk
+function ProductCard({ product }: { product: Product }) {
   return (
-    <View style={styles.container}>
-      <View style={styles.card}>
-        <Ionicons name="information-circle" size={40} color="#2563eb" />
-
-        <Text style={styles.title}>Hello World</Text>
-
-        <TextInput placeholder="Type here..." style={styles.input} />
-
-        <Pressable style={styles.button}>
-          <Ionicons name="hand-left" size={20} color="#FFFFFF" />
-
-          <Text style={styles.buttonText}>Click Me</Text>
-        </Pressable>
+    <View style={styles.productCard}>
+      <View style={styles.productIcon}>
+        <Ionicons name={product.icon} size={45} color="#31572c" />
       </View>
+
+      <View style={styles.productInfo}>
+        <Text style={styles.productName}>{product.name}</Text>
+
+        <Text style={styles.category}>{product.category}</Text>
+
+        <Text style={styles.price}>{formatPrice(product.price)}</Text>
+      </View>
+
+      <Pressable
+        onPress={() => router.push("/detail")}
+        style={({ pressed }) => [
+          styles.buyButton,
+          pressed && styles.buttonPressed,
+        ]}
+      >
+        <Ionicons name="cart-outline" size={20} color="#FFFFFF" />
+
+        <Text style={styles.buyButtonText}>Lihat</Text>
+      </Pressable>
     </View>
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#e0f2fe",
-    justifyContent: "center",
-    alignItems: "center",
-    padding: 20,
-  },
+export default function Index() {
+  return (
+    <View style={styles.container}>
+      {/* Header */}
+      <View style={styles.header}>
+        <View>
+          <Text style={styles.logo}>CLOTHING</Text>
 
-  card: {
-    width: "100%",
-    backgroundColor: "#FFFFFF",
-    borderRadius: 12,
-    padding: 20,
-    alignItems: "center",
-  },
+          <Text style={styles.subtitle}>Preloved fashion, lebih mudah.</Text>
+        </View>
 
-  title: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "red",
-    marginBottom: 20,
-    textAlign: "center",
-  },
+        <Pressable style={styles.cartButton}>
+          <Ionicons name="cart-outline" size={25} color="#31572c" />
+        </Pressable>
+      </View>
 
-  input: {
-    width: "100%",
-    borderWidth: 2,
-    borderColor: "#2563eb",
-    backgroundColor: "white",
-    padding: 10,
-    borderRadius: 10,
-    marginBottom: 20,
-  },
+      {/* Welcome */}
+      <View style={styles.welcomeCard}>
+        <Text style={styles.welcomeTitle}>Temukan Style Kamu 👕</Text>
 
-  button: {
-    width: "100%",
-    height: 45,
-    backgroundColor: "#2563eb",
-    borderRadius: 8,
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    gap: 8,
-  },
+        <Text style={styles.welcomeText}>
+          Belanja fashion preloved berkualitas tanpa harus datang langsung ke
+          tempat thrift.
+        </Text>
+      </View>
 
-  buttonText: {
-    color: "#FFFFFF",
-    fontWeight: "bold",
-  },
-});
+      {/* Section Produk */}
+      <View style={styles.sectionHeader}>
+        <Text style={styles.sectionTitle}>Produk Terbaru</Text>
+
+        <Text style={styles.seeAll}>Lihat semua</Text>
+      </View>
+
+      {/* Loop Array Produk */}
+      <View style={styles.productList}>
+        {products.map((product) => (
+          <ProductCard key={product.id} product={product} />
+        ))}
+      </View>
+
+      {/* Inline Style */}
+      <Text
+        style={{
+          textAlign: "center",
+          marginTop: 20,
+          fontSize: 13,
+          color: "#6b7280",
+        }}
+      >
+        ♻️ Fashion lebih hemat, lebih ramah lingkungan
+      </Text>
+    </View>
+  );
+}
