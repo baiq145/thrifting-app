@@ -3,8 +3,26 @@
   "compilerOptions": {
     "strict": true,
     "paths": {
-      "@/*": [
-        "./src/*"
+      "@/components/*": [
+        "./components/*"
+      ],
+      "@/context/*": [
+        "./context/*"
+      ],
+      "@/styles": [
+        "./styles"
+      ],
+      "@/styles/*": [
+        "./styles/*"
+      ],
+      "@/types/*": [
+        "./src/types/*"
+      ],
+      "@/data/*": [
+        "./src/data/*"
+      ],
+      "@/services/*": [
+        "./src/services/*"
       ],
       "@/assets/*": [
         "./assets/*"
@@ -12,8 +30,20 @@
     }
   },
   "include": [
-    "**/*.ts",
-    "**/*.tsx",
+    "app/**/*.ts",
+    "app/**/*.tsx",
+    "components/**/*.ts",
+    "components/**/*.tsx",
+    "context/**/*.ts",
+    "context/**/*.tsx",
+    "styles/**/*.ts",
+    "styles/**/*.tsx",
+    "src/data/**/*.ts",
+    "src/data/**/*.tsx",
+    "src/services/**/*.ts",
+    "src/services/**/*.tsx",
+    "src/types/**/*.ts",
+    "src/types/**/*.tsx",
     ".expo/types/**/*.ts",
     "expo-env.d.ts"
   ]
