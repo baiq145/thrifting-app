@@ -1,4 +1,5 @@
-import React, { useEffect, useMemo, useState } from "react";
+import { useRouter } from "expo-router";
+import { useEffect, useMemo, useState } from "react";
 import {
   ActivityIndicator,
   FlatList,
@@ -9,30 +10,42 @@ import {
   TextInput,
   View,
 } from "react-native";
-import { useRouter } from "expo-router";
+
+import { useAuth } from "@/context/AuthContext";
 
 import ProductCard from "@/components/ProductCard";
-import {
-  categories,
-  fallbackProducts,
-} from "@/data/products";
+import { categories, fallbackProducts } from "@/data/products";
 import { getThriftProducts } from "@/services/productService";
-import type {
-  ProductCategory,
-  ThriftProduct,
-} from "@/types/product";
+import type { ProductCategory, ThriftProduct } from "@/types/product";
 
 export default function HomeScreen() {
   const router = useRouter();
+  const { signOut } = useAuth();
 
-  // PENTING:
-  // products SELALU berupa array.
-  const [products, setProducts] = useState<ThriftProduct[]>(
-    fallbackProducts
-  );
+  // =====================================================
+  // LOGOUT
+  // =====================================================
 
-  const [selectedCategory, setSelectedCategory] =
-    useState<"Semua" | ProductCategory>("Semua");
+  const handleLogout = async () => {
+    const { error } = await signOut();
+
+    if (error) {
+      console.log("Logout gagal:", error.message);
+      return;
+    }
+
+    router.replace("./login");
+  };
+
+  // =====================================================
+  // STATE
+  // =====================================================
+
+  const [products, setProducts] = useState<ThriftProduct[]>(fallbackProducts);
+
+  const [selectedCategory, setSelectedCategory] = useState<
+    "Semua" | ProductCategory
+  >("Semua");
 
   const [searchText, setSearchText] = useState("");
 
@@ -53,26 +66,19 @@ export default function HomeScreen() {
 
       const result = await getThriftProducts();
 
-      // Pastikan hasil API benar-benar array
       if (Array.isArray(result)) {
         setProducts(result);
       } else {
-        // Kalau service bermasalah, langsung pakai data lokal
         setProducts([...fallbackProducts]);
 
-        setError(
-          "Data API tidak tersedia. Menampilkan produk lokal."
-        );
+        setError("Data API tidak tersedia. Menampilkan produk lokal.");
       }
     } catch (error) {
       console.log("Gagal mengambil data:", error);
 
-      // JANGAN PERNAH setProducts(undefined)
       setProducts([...fallbackProducts]);
 
-      setError(
-        "API tidak dapat diakses. Menampilkan produk lokal."
-      );
+      setError("API tidak dapat diakses. Menampilkan produk lokal.");
     } finally {
       setLoading(false);
     }
@@ -102,18 +108,14 @@ export default function HomeScreen() {
       } else {
         setProducts([...fallbackProducts]);
 
-        setError(
-          "Data API tidak tersedia. Menampilkan produk lokal."
-        );
+        setError("Data API tidak tersedia. Menampilkan produk lokal.");
       }
     } catch (error) {
       console.log("Refresh gagal:", error);
 
       setProducts([...fallbackProducts]);
 
-      setError(
-        "Refresh gagal. Menampilkan produk lokal."
-      );
+      setError("Refresh gagal. Menampilkan produk lokal.");
     } finally {
       setRefreshing(false);
     }
@@ -124,24 +126,18 @@ export default function HomeScreen() {
   // =====================================================
 
   const visibleProducts = useMemo(() => {
-    // INI BAGIAN PENTING
-    // Jangan langsung products.filter()
     const safeProducts: ThriftProduct[] = Array.isArray(products)
       ? products
       : fallbackProducts;
 
-    const normalizedSearch =
-      searchText.trim().toLowerCase();
+    const normalizedSearch = searchText.trim().toLowerCase();
 
     return safeProducts.filter((product) => {
-      const productName =
-        String(product.name ?? "").toLowerCase();
+      const productName = String(product.name ?? "").toLowerCase();
 
-      const productCategory =
-        String(product.category ?? "").toLowerCase();
+      const productCategory = String(product.category ?? "").toLowerCase();
 
-      const productColor =
-        String(product.color ?? "").toLowerCase();
+      const productColor = String(product.color ?? "").toLowerCase();
 
       const matchesSearch =
         productName.includes(normalizedSearch) ||
@@ -149,8 +145,7 @@ export default function HomeScreen() {
         productColor.includes(normalizedSearch);
 
       const matchesCategory =
-        selectedCategory === "Semua" ||
-        product.category === selectedCategory;
+        selectedCategory === "Semua" || product.category === selectedCategory;
 
       return matchesSearch && matchesCategory;
     });
@@ -176,14 +171,9 @@ export default function HomeScreen() {
   if (loading && products.length === 0) {
     return (
       <View style={styles.loadingContainer}>
-        <ActivityIndicator
-          size="large"
-          color="#4F6F52"
-        />
+        <ActivityIndicator size="large" color="#4F6F52" />
 
-        <Text style={styles.loadingText}>
-          Memuat produk...
-        </Text>
+        <Text style={styles.loadingText}>Memuat produk...</Text>
       </View>
     );
   }
@@ -208,7 +198,6 @@ export default function HomeScreen() {
             colors={["#4F6F52"]}
           />
         }
-
         // =================================================
         // HEADER
         // =================================================
@@ -216,36 +205,38 @@ export default function HomeScreen() {
         ListHeaderComponent={
           <View>
             <View style={styles.header}>
+              {/* BAGIAN KIRI */}
               <View style={styles.headerText}>
-                <Text style={styles.logo}>
-                  THRIFTING
-                </Text>
+                <Text style={styles.logo}>THRIFTING</Text>
 
-                <Text style={styles.title}>
-                  Temukan Fashion
-                </Text>
+                <Text style={styles.title}>Temukan Fashion</Text>
 
                 <Text style={styles.subtitle}>
                   Barang thrift pilihan untuk gaya kamu.
                 </Text>
               </View>
 
-              <Pressable
-                style={styles.favoriteButton}
-                onPress={() => router.push("/favorites")}
-              >
-                <Text style={styles.favoriteIcon}>
-                  ♡
-                </Text>
-              </Pressable>
+              {/* BAGIAN KANAN */}
+              <View style={styles.headerActions}>
+                {/* FAVORIT */}
+                <Pressable
+                  style={styles.favoriteButton}
+                  onPress={() => router.push("/favorites")}
+                >
+                  <Text style={styles.favoriteIcon}>♡</Text>
+                </Pressable>
+
+                {/* LOGOUT */}
+                <Pressable style={styles.logoutButton} onPress={handleLogout}>
+                  <Text style={styles.logoutText}>Keluar</Text>
+                </Pressable>
+              </View>
             </View>
 
             {/* SEARCH */}
 
             <View style={styles.searchBox}>
-              <Text style={styles.searchIcon}>
-                🔍
-              </Text>
+              <Text style={styles.searchIcon}>🔍</Text>
 
               <TextInput
                 value={searchText}
@@ -258,9 +249,7 @@ export default function HomeScreen() {
 
             {/* KATEGORI */}
 
-            <Text style={styles.sectionTitle}>
-              Kategori
-            </Text>
+            <Text style={styles.sectionTitle}>Kategori</Text>
 
             <FlatList
               horizontal
@@ -269,25 +258,20 @@ export default function HomeScreen() {
               showsHorizontalScrollIndicator={false}
               contentContainerStyle={styles.categoryList}
               renderItem={({ item }) => {
-                const isActive =
-                  selectedCategory === item;
+                const isActive = selectedCategory === item;
 
                 return (
                   <Pressable
-                    onPress={() =>
-                      setSelectedCategory(item)
-                    }
+                    onPress={() => setSelectedCategory(item)}
                     style={[
                       styles.categoryButton,
-                      isActive &&
-                        styles.categoryButtonActive,
+                      isActive && styles.categoryButtonActive,
                     ]}
                   >
                     <Text
                       style={[
                         styles.categoryText,
-                        isActive &&
-                          styles.categoryTextActive,
+                        isActive && styles.categoryTextActive,
                       ]}
                     >
                       {item}
@@ -301,18 +285,14 @@ export default function HomeScreen() {
 
             {error !== "" && (
               <View style={styles.infoBox}>
-                <Text style={styles.infoText}>
-                  {error}
-                </Text>
+                <Text style={styles.infoText}>{error}</Text>
               </View>
             )}
 
             {/* JUMLAH PRODUK */}
 
             <View style={styles.resultRow}>
-              <Text style={styles.sectionTitle}>
-                Produk Pilihan
-              </Text>
+              <Text style={styles.sectionTitle}>Produk Pilihan</Text>
 
               <Text style={styles.countText}>
                 {visibleProducts.length} produk
@@ -320,34 +300,27 @@ export default function HomeScreen() {
             </View>
           </View>
         }
-
         // =================================================
         // PRODUCT CARD
         // =================================================
 
         renderItem={({ item }) => (
-  <View style={styles.cardWrapper}>
-    <ProductCard product={item} />
-  </View>
-)}
-
+          <View style={styles.cardWrapper}>
+            <ProductCard product={item} />
+          </View>
+        )}
         // =================================================
         // KALAU PRODUK KOSONG
         // =================================================
 
         ListEmptyComponent={
           <View style={styles.emptyContainer}>
-            <Text style={styles.emptyEmoji}>
-              🛍️
-            </Text>
+            <Text style={styles.emptyEmoji}>🛍️</Text>
 
-            <Text style={styles.emptyTitle}>
-              Produk tidak ditemukan
-            </Text>
+            <Text style={styles.emptyTitle}>Produk tidak ditemukan</Text>
 
             <Text style={styles.emptyText}>
-              Coba cari dengan kata lain atau
-              pilih kategori Semua.
+              Coba cari dengan kata lain atau pilih kategori Semua.
             </Text>
 
             <Pressable
@@ -357,13 +330,10 @@ export default function HomeScreen() {
                 setSelectedCategory("Semua");
               }}
             >
-              <Text style={styles.resetText}>
-                Reset Filter
-              </Text>
+              <Text style={styles.resetText}>Reset Filter</Text>
             </Pressable>
           </View>
         }
-
         // =================================================
         // FOOTER
         // =================================================
@@ -404,9 +374,13 @@ const styles = StyleSheet.create({
     marginBottom: 16,
   },
 
+  // =====================================================
+  // HEADER
+  // =====================================================
+
   header: {
-    paddingTop: 25,
-    paddingBottom: 18,
+    paddingTop: 38,
+    paddingBottom: 20,
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "flex-start",
@@ -414,6 +388,7 @@ const styles = StyleSheet.create({
 
   headerText: {
     flex: 1,
+    paddingRight: 10,
   },
 
   logo: {
@@ -421,7 +396,7 @@ const styles = StyleSheet.create({
     fontWeight: "900",
     color: "#4F6F52",
     letterSpacing: 2,
-    marginBottom: 5,
+    marginBottom: 7,
   },
 
   title: {
@@ -434,6 +409,17 @@ const styles = StyleSheet.create({
     fontSize: 13,
     color: "#707870",
     marginTop: 5,
+  },
+
+  // =====================================================
+  // TOMBOL KANAN
+  // =====================================================
+
+  headerActions: {
+    flexDirection: "row",
+    alignItems: "center",
+    gap: 8,
+    marginTop: 4,
   },
 
   favoriteButton: {
@@ -449,6 +435,23 @@ const styles = StyleSheet.create({
     fontSize: 27,
     color: "#4F6F52",
   },
+
+  logoutButton: {
+    backgroundColor: "#26382A",
+    paddingHorizontal: 12,
+    paddingVertical: 10,
+    borderRadius: 12,
+  },
+
+  logoutText: {
+    color: "#FFFFFF",
+    fontSize: 12,
+    fontWeight: "800",
+  },
+
+  // =====================================================
+  // SEARCH
+  // =====================================================
 
   searchBox: {
     height: 50,
@@ -472,6 +475,10 @@ const styles = StyleSheet.create({
     fontSize: 14,
     color: "#26382A",
   },
+
+  // =====================================================
+  // KATEGORI
+  // =====================================================
 
   sectionTitle: {
     fontSize: 17,
@@ -505,6 +512,10 @@ const styles = StyleSheet.create({
     color: "#FFFFFF",
   },
 
+  // =====================================================
+  // INFO API
+  // =====================================================
+
   infoBox: {
     backgroundColor: "#FFF7E6",
     borderRadius: 12,
@@ -516,6 +527,10 @@ const styles = StyleSheet.create({
     fontSize: 12,
     color: "#80652B",
   },
+
+  // =====================================================
+  // HASIL
+  // =====================================================
 
   resultRow: {
     flexDirection: "row",
@@ -529,6 +544,10 @@ const styles = StyleSheet.create({
     color: "#8A918B",
   },
 
+  // =====================================================
+  // LOADING
+  // =====================================================
+
   loadingContainer: {
     flex: 1,
     justifyContent: "center",
@@ -541,6 +560,10 @@ const styles = StyleSheet.create({
     color: "#59625B",
     fontSize: 14,
   },
+
+  // =====================================================
+  // EMPTY
+  // =====================================================
 
   emptyContainer: {
     alignItems: "center",
@@ -578,6 +601,10 @@ const styles = StyleSheet.create({
     fontWeight: "800",
     fontSize: 13,
   },
+
+  // =====================================================
+  // FOOTER
+  // =====================================================
 
   footer: {
     alignItems: "center",
