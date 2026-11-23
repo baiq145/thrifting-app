@@ -15,6 +15,7 @@ import { useAuth } from "@/context/AuthContext";
 
 import ProductCard from "@/components/ProductCard";
 import { categories, fallbackProducts } from "@/data/products";
+import { getProductsFromSupabase } from "@/services/productDbService";
 import { getThriftProducts } from "@/services/productService";
 import type { ProductCategory, ThriftProduct } from "@/types/product";
 
@@ -64,21 +65,61 @@ export default function HomeScreen() {
       setLoading(true);
       setError("");
 
-      const result = await getThriftProducts();
+      // =================================================
+      // SELECT DATA DARI SUPABASE
+      // =================================================
 
-      if (Array.isArray(result)) {
-        setProducts(result);
+      const supabaseProducts = await getProductsFromSupabase();
+
+      if (supabaseProducts.length > 0) {
+        console.log(
+          "SELECT Supabase berhasil:",
+          supabaseProducts.length,
+          "produk",
+        );
+
+        setProducts(supabaseProducts);
+        return;
+      }
+
+      // =================================================
+      // FALLBACK KE API MODUL 3
+      // =================================================
+
+      console.log("Supabase kosong. Mengambil data dari API...");
+
+      const apiProducts = await getThriftProducts();
+
+      if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+        setProducts(apiProducts);
+        setError("Supabase kosong. Menampilkan produk dari API.");
       } else {
         setProducts([...fallbackProducts]);
-
-        setError("Data API tidak tersedia. Menampilkan produk lokal.");
+        setError("Data tidak tersedia. Menampilkan produk lokal.");
       }
     } catch (error) {
-      console.log("Gagal mengambil data:", error);
+      console.log("Supabase SELECT gagal:", error);
 
-      setProducts([...fallbackProducts]);
+      // =================================================
+      // FALLBACK KE API MODUL 3
+      // =================================================
 
-      setError("API tidak dapat diakses. Menampilkan produk lokal.");
+      try {
+        const apiProducts = await getThriftProducts();
+
+        if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+          setProducts(apiProducts);
+          setError("Supabase gagal. Menampilkan produk dari API.");
+        } else {
+          setProducts([...fallbackProducts]);
+          setError("Data tidak tersedia. Menampilkan produk lokal.");
+        }
+      } catch (apiError) {
+        console.log("API juga gagal:", apiError);
+
+        setProducts([...fallbackProducts]);
+        setError("Supabase dan API gagal. Menampilkan produk lokal.");
+      }
     } finally {
       setLoading(false);
     }
@@ -101,21 +142,49 @@ export default function HomeScreen() {
       setRefreshing(true);
       setError("");
 
-      const result = await getThriftProducts();
+      // SELECT ULANG DARI SUPABASE
+      const supabaseProducts = await getProductsFromSupabase();
 
-      if (Array.isArray(result)) {
-        setProducts(result);
+      if (supabaseProducts.length > 0) {
+        console.log(
+          "Refresh Supabase berhasil:",
+          supabaseProducts.length,
+          "produk",
+        );
+
+        setProducts(supabaseProducts);
+        return;
+      }
+
+      // FALLBACK KE API
+      const apiProducts = await getThriftProducts();
+
+      if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+        setProducts(apiProducts);
+        setError("Supabase kosong. Menampilkan produk dari API.");
       } else {
         setProducts([...fallbackProducts]);
-
-        setError("Data API tidak tersedia. Menampilkan produk lokal.");
+        setError("Refresh gagal. Menampilkan produk lokal.");
       }
     } catch (error) {
-      console.log("Refresh gagal:", error);
+      console.log("Refresh Supabase gagal:", error);
 
-      setProducts([...fallbackProducts]);
+      try {
+        const apiProducts = await getThriftProducts();
 
-      setError("Refresh gagal. Menampilkan produk lokal.");
+        if (Array.isArray(apiProducts) && apiProducts.length > 0) {
+          setProducts(apiProducts);
+          setError("Supabase gagal. Menampilkan produk dari API.");
+        } else {
+          setProducts([...fallbackProducts]);
+          setError("Refresh gagal. Menampilkan produk lokal.");
+        }
+      } catch (apiError) {
+        console.log("Refresh API juga gagal:", apiError);
+
+        setProducts([...fallbackProducts]);
+        setError("Refresh gagal. Menampilkan produk lokal.");
+      }
     } finally {
       setRefreshing(false);
     }
@@ -206,6 +275,7 @@ export default function HomeScreen() {
           <View>
             <View style={styles.header}>
               {/* BAGIAN KIRI */}
+
               <View style={styles.headerText}>
                 <Text style={styles.logo}>THRIFTING</Text>
 
@@ -217,8 +287,10 @@ export default function HomeScreen() {
               </View>
 
               {/* BAGIAN KANAN */}
+
               <View style={styles.headerActions}>
                 {/* FAVORIT */}
+
                 <Pressable
                   style={styles.favoriteButton}
                   onPress={() => router.push("/favorites")}
@@ -227,6 +299,7 @@ export default function HomeScreen() {
                 </Pressable>
 
                 {/* LOGOUT */}
+
                 <Pressable style={styles.logoutButton} onPress={handleLogout}>
                   <Text style={styles.logoutText}>Keluar</Text>
                 </Pressable>
@@ -281,7 +354,7 @@ export default function HomeScreen() {
               }}
             />
 
-            {/* INFO API */}
+            {/* INFO */}
 
             {error !== "" && (
               <View style={styles.infoBox}>
@@ -513,7 +586,7 @@ const styles = StyleSheet.create({
   },
 
   // =====================================================
-  // INFO API
+  // INFO
   // =====================================================
 
   infoBox: {
